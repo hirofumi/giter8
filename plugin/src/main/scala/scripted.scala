@@ -36,13 +36,13 @@ object Scripted {
 
   def scriptedRunTask: Initialize[Task[Method]] = (scriptedTests) map {
     (m) =>
-    m.getClass.getMethod("run", classOf[File], classOf[Boolean], classOf[String], classOf[String], classOf[String], classOf[Array[String]], classOf[File]) 
+    m.getClass.getMethod("run", classOf[File], classOf[Boolean], classOf[String], classOf[String], classOf[String], classOf[Array[String]], classOf[File], classOf[Array[String]])
   }
   
   def scriptedTask: Initialize[InputTask[Unit]] = InputTask(_ => complete.Parsers.spaceDelimited("<arg>")) { result =>
-    (scriptedDependencies, scriptedTests, scriptedRun, sbtTestDirectory, scriptedBufferLog, scriptedSbt, scriptedScalas, sbtLauncher, result) map {
-      (deps, m, r, testdir, bufferlog, version, scriptedScalas, launcher, args) =>
-      try { r.invoke(m, testdir, bufferlog: java.lang.Boolean, version.toString, scriptedScalas.build, scriptedScalas.versions, args.toArray, launcher) }
+    (scriptedDependencies, scriptedTests, scriptedRun, sbtTestDirectory, scriptedBufferLog, scriptedSbt, scriptedScalas, sbtLauncher, scriptedLaunchOpts, result) map {
+      (deps, m, r, testdir, bufferlog, version, scriptedScalas, launcher, launchOpts, args) =>
+      try { r.invoke(m, testdir, bufferlog: java.lang.Boolean, version.toString, scriptedScalas.build, scriptedScalas.versions, args.toArray, launcher, launchOpts.toArray) }
       catch { case e: java.lang.reflect.InvocationTargetException => throw e.getCause }
     }
   }   
@@ -52,7 +52,7 @@ object Scripted {
     resolvers += Resolver.url("Typesafe repository", new java.net.URL("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
     scriptedSbt <<= (appConfiguration)(_.provider.id.version),
     scriptedScalas <<= (scalaVersion) { (scala) => ScriptedScalas(scala, scala) },
-    libraryDependencies <<= (libraryDependencies, scriptedScalas, scriptedSbt) {(deps, scalas, version) => deps :+ "org.scala-sbt" % ("scripted-sbt_" + scalas.build) % version % scriptedConf.toString },
+    libraryDependencies <<= (libraryDependencies, scriptedSbt) {(deps, version) => deps :+ "org.scala-sbt" % "scripted-sbt" % version % scriptedConf.toString },
     sbtLauncher <<= (appConfiguration)(app => IO.classLocationFile(app.provider.scalaProvider.launcher.getClass)),
     sbtTestDirectory <<= sourceDirectory / "sbt-test",
     scriptedBufferLog := true,
