@@ -25,6 +25,7 @@ object Scripted {
   val scriptedClasspath = TaskKey[PathFinder]("_g8-scripted-classpath")
   val scriptedTests = TaskKey[AnyRef]("_g8-scripted-tests")
   val scriptedRun = TaskKey[Method]("_g8-scripted-run")
+  val scriptedLaunchOpts = SettingKey[Seq[String]]("_g8_scripted-launch-opts", "options to pass to jvm launching scripted tasks")
   val scriptedDependencies = TaskKey[Unit]("_g8-scripted-dependencies")
   val scripted = InputKey[Unit]("_g8-scripted")   
   
@@ -47,6 +48,10 @@ object Scripted {
     }
   }   
   
+  lazy val defaultLaunchOps = sys.process.javaVmArguments filter { a =>
+    Seq("-Xmx", "-Xms").exists(a.startsWith) || a.startsWith("-XX")
+  }
+
   lazy val scriptedSettings: Seq[sbt.Project.Setting[_]] = Seq(
     ivyConfigurations += scriptedConf,
     resolvers += Resolver.url("Typesafe repository", new java.net.URL("http://typesafe.artifactoryonline.com/typesafe/ivy-releases/"))(Resolver.defaultIvyPatterns),
@@ -60,6 +65,7 @@ object Scripted {
     scriptedTests <<= scriptedTestsTask,
     scriptedRun <<= scriptedRunTask,
     scriptedDependencies <<= (compile in Test, publishLocal) map { (analysis, pub) => Unit },
+    scriptedLaunchOpts := defaultLaunchOps,
     scripted <<= scriptedTask     
   )
 }
